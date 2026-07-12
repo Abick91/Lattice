@@ -43,6 +43,36 @@ graph TD
 
 ---
 
+## 🧠 Rust Core vs. 📘 TypeScript Client
+
+Lattice is a **two-layer system** where each half needs the other. Think of it
+as a **brain and a body**:
+
+| | 🦀 **Rust Core** (the brain) | 📘 **TypeScript Client** (the body + interface) |
+| :--- | :--- | :--- |
+| **Role** | Computes *what to do* | Defines and *does* it |
+| **Responsibility** | A\* planning, precondition/effect evaluation, skill-tree caching, DAG dependency analysis | The developer-facing eDSL, running each action, orchestrating parallel execution |
+| **Why this language** | Deterministic and microsecond-fast; no GC pauses | Ergonomic typed API and the native `async` ecosystem where real I/O lives |
+| **Where it lives** | `src/*.rs`, `lattice-daemon` binary, WASM build | `lattice_client_server_interface.ts`, `lattice_bridge.ts` |
+
+**How they cooperate:**
+
+1. You declare state, tools, preconditions and goals in **TypeScript** — the
+   type-safe eDSL. This is the public API you program against.
+2. The client sends that problem to the **Rust** planner (over a persistent TCP
+   daemon, or in-process via WASM). Rust searches the state space with A\* and
+   returns the *optimal plan*, grouped into parallel DAG tiers plus telemetry.
+3. Back in **TypeScript**, the client executes each action — your
+   `execute: async (state) => {...}` functions do the real work (API calls, DB
+   writes, transfers). Rust decides *what* to do; Node *does* it.
+
+> **Why ship them together?** The Rust core on its own is just a search
+> algorithm — it can't touch the real world. The TypeScript client on its own
+> has no planning engine. Together they are a single framework: **write your
+> agents in TypeScript, plan them in Rust.**
+
+---
+
 ## 🚀 Quick Start
 
 ### 1. Prerequisites
