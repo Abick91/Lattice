@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Lattice Agent DevTools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .link {
+            fill: none;
+        }
+        .glow {
+            filter: drop-shadow(0 0 5px rgba(34, 197, 94, 0.8));
+        }
+        body {
+            background-color: #0b0f19;
+            color: #f1f5f9;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden font-sans">
+    <!-- Header -->
+    <header class="bg-[#111827] border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+        <div>
+            <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                <span class="text-indigo-500">🌀</span> Lattice DevTools
+            </h1>
+            <p class="text-xs text-gray-400 mt-0.5">Visualizador Interactivo del Espacio de Búsqueda A*</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="text-xs px-2.5 py-1 bg-green-500/10 text-green-400 border border-green-500/20 rounded-full font-medium flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                WASM In-Process
+            </span>
+        </div>
+    </header>
+
+    <!-- Content -->
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Left Sidebar: Overview -->
+        <aside class="w-80 bg-[#111827]/50 border-r border-gray-800 p-5 flex flex-col gap-6 overflow-y-auto">
+            <div>
+                <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3">Plan Resuelto</h3>
+                <div class="flex flex-col gap-2" id="plan-list">
+                    <!-- Injected dynamically -->
+                </div>
+            </div>
+            <div>
+                <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3">Estadísticas de Búsqueda</h3>
+                <div class="grid grid-cols-2 gap-3 bg-gray-900/50 border border-gray-800/80 rounded-lg p-3">
+                    <div>
+                        <div class="text-xs text-gray-500">Nodos Visitados</div>
+                        <div class="text-lg font-bold text-white" id="stat-visited">0</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500">Nivel Máximo</div>
+                        <div class="text-lg font-bold text-white" id="stat-depth">0</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center SVG Canvas -->
+        <main class="flex-1 relative bg-[#0b0f19] flex items-center justify-center">
+            <div class="absolute top-4 left-4 z-10 bg-gray-900/80 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-gray-400 select-none pointer-events-none">
+                💡 Arrastra para panear | Rueda del mouse para zoom | Clic en nodo para inspeccionar
+            </div>
+            <svg id="canvas" class="w-full h-full cursor-grab active:cursor-grabbing"></svg>
+        </main>
+
+        <!-- Right Sidebar: Inspector -->
+        <aside class="w-96 bg-[#111827]/50 border-l border-gray-800 p-5 flex flex-col gap-4 overflow-y-auto" id="inspector">
+            <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider border-b border-gray-800 pb-2">Inspector de Estado</h3>
+            <div class="text-xs text-gray-400" id="inspector-placeholder">Selecciona un nodo del árbol para inspeccionar sus variables.</div>
+            
+            <div id="inspector-content" class="hidden flex flex-col gap-4">
+                <div>
+                    <div class="text-xs text-gray-500">Acción Ejecutada</div>
+                    <div class="text-sm font-semibold text-indigo-400" id="inspect-action">-</div>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-2 bg-gray-900/50 border border-gray-800 p-2.5 rounded-lg text-center">
+                    <div>
+                        <div class="text-[10px] text-gray-500">Costo (g)</div>
+                        <div class="text-sm font-bold text-white" id="inspect-g">0</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-500">Heurística (h)</div>
+                        <div class="text-sm font-bold text-white" id="inspect-h">0</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-500">Total (f)</div>
+                        <div class="text-sm font-bold text-indigo-400" id="inspect-f">0</div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-xs text-gray-500 mb-1.5">Variables de Memoria</div>
+                    <pre class="bg-gray-900 border border-gray-800 rounded-lg p-3 text-xs font-mono text-green-400 overflow-x-auto" id="inspect-state">{}</pre>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Script Block -->
+    <script>
+        const telemetry = [{"state":{"invoiceApproved":false,"balance":50,"identityVerified":true,"reconciliationReportSent":false,"fundsDisbursed":false,"externalBlocker":true},"parent_state":null,"action":null,"g":0,"h":1,"f":1},{"state":{"balance":50,"invoiceApproved":false,"externalBlocker":false,"identityVerified":true,"fundsDisbursed":false,"reconciliationReportSent":false},"parent_state":{"invoiceApproved":false,"identityVerified":true,"balance":50,"reconciliationReportSent":false,"externalBlocker":true,"fundsDisbursed":false},"action":"ClearBlocker","g":1,"h":1,"f":2},{"state":{"invoiceApproved":false,"reconciliationReportSent":false,"balance":100,"identityVerified":true,"externalBlocker":true,"fundsDisbursed":false},"parent_state":{"fundsDisbursed":false,"identityVerified":true,"invoiceApproved":false,"externalBlocker":true,"balance":50,"reconciliationReportSent":false},"action":"InstantDeposit","g":1,"h":1,"f":2},{"state":{"reconciliationReportSent":false,"externalBlocker":false,"fundsDisbursed":false,"identityVerified":true,"invoiceApproved":false,"balance":100},"parent_state":{"invoiceApproved":false,"externalBlocker":false,"identityVerified":true,"reconciliationReportSent":false,"balance":50,"fundsDisbursed":false},"action":"InstantDeposit","g":2,"h":1,"f":3},{"state":{"externalBlocker":false,"identityVerified":true,"balance":100,"invoiceApproved":false,"reconciliationReportSent":false,"fundsDisbursed":false},"parent_state":{"identityVerified":true,"invoiceApproved":false,"externalBlocker":true,"balance":100,"fundsDisbursed":false,"reconciliationReportSent":false},"action":"ClearBlocker","g":2,"h":1,"f":3},{"state":{"fundsDisbursed":false,"externalBlocker":false,"identityVerified":true,"balance":100,"invoiceApproved":true,"reconciliationReportSent":false},"parent_state":{"invoiceApproved":false,"identityVerified":true,"balance":100,"fundsDisbursed":false,"reconciliationReportSent":false,"externalBlocker":false},"action":"ApproveInvoice","g":3,"h":1,"f":4},{"state":{"identityVerified":true,"externalBlocker":false,"fundsDisbursed":true,"reconciliationReportSent":false,"invoiceApproved":true,"balance":0},"parent_state":{"balance":100,"externalBlocker":false,"reconciliationReportSent":false,"invoiceApproved":true,"fundsDisbursed":false,"identityVerified":true},"action":"DisburseFunds","g":4,"h":1,"f":5},{"state":{"invoiceApproved":true,"balance":0,"externalBlocker":false,"fundsDisbursed":true,"identityVerified":true,"reconciliationReportSent":true},"parent_state":{"invoiceApproved":true,"reconciliationReportSent":false,"identityVerified":true,"balance":0,"externalBlocker":false,"fundsDisbursed":true},"action":"SendReconciliationReport","g":5,"h":0,"f":5}];
+        const finalPlan = ["ClearBlocker","InstantDeposit","ApproveInvoice","DisburseFunds","SendReconciliationReport"];
+
+        // Render stats
+        document.getElementById('stat-visited').innerText = telemetry.length;
+
+        // Build tree
+        const stateEquals = (s1, s2) => {
+            if (!s1 || !s2) return false;
+            const keys1 = Object.keys(s1);
+            const keys2 = Object.keys(s2);
+            if (keys1.length !== keys2.length) return false;
+            for (const k of keys1) {
+                if (JSON.stringify(s1[k]) !== JSON.stringify(s2[k])) return false;
+            }
+            return true;
+        };
+
+        const rootStep = telemetry.find(s => !s.parent_state) || telemetry[0];
+        const root = {
+            state: rootStep.state,
+            action: rootStep.action || 'Start',
+            g: rootStep.g,
+            h: rootStep.h,
+            f: rootStep.f,
+            children: [],
+            isChosenPath: false
+        };
+
+        const findAndAttach = (node, step) => {
+            if (stateEquals(node.state, step.parent_state)) {
+                const childNode = {
+                    state: step.state,
+                    action: step.action || undefined,
+                    g: step.g,
+                    h: step.h,
+                    f: step.f,
+                    children: [],
+                    isChosenPath: false
+                };
+                node.children.push(childNode);
+                return true;
+            }
+            for (const child of node.children) {
+                if (findAndAttach(child, step)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        for (const step of telemetry) {
+            if (step === rootStep) continue;
+            findAndAttach(root, step);
+        }
+
+        const markChosenPath = (node, planIndex) => {
+            node.isChosenPath = true;
+            if (planIndex >= finalPlan.length) return;
+            const nextAction = finalPlan[planIndex];
+            const nextNode = node.children.find(c => c.action === nextAction);
+            if (nextNode) {
+                markChosenPath(nextNode, planIndex + 1);
+            }
+        };
+        markChosenPath(root, 0);
+
+        // Find max depth of tree
+        const getDepth = (node) => {
+            if (!node.children || node.children.length === 0) return 1;
+            return 1 + Math.max(...node.children.map(getDepth));
+        };
+        document.getElementById('stat-depth').innerText = getDepth(root);
+
+        // Render Plan list
+        const planList = document.getElementById('plan-list');
+        finalPlan.forEach((action, idx) => {
+            const item = document.createElement('div');
+            item.className = 'flex items-center gap-3 bg-gray-900 border border-gray-800 px-3 py-2 rounded-lg';
+            item.innerHTML = `
+                <span class="text-xs font-mono bg-indigo-500/20 text-indigo-400 w-5 h-5 rounded-full flex items-center justify-center font-bold">${idx + 1}</span>
+                <span class="text-sm font-semibold text-gray-200">${action}</span>
+            `;
+            planList.appendChild(item);
+        });
+
+        // SVG D3 rendering
+        const svg = d3.select("#canvas");
+        const width = window.innerWidth - 320 - 384;
+        const height = window.innerHeight - 80;
+
+        const gContainer = svg.append("g");
+
+        // Zoom setup
+        svg.call(d3.zoom().on("zoom", (event) => {
+            gContainer.attr("transform", event.transform);
+        }));
+
+        const treeLayout = d3.tree().nodeSize([80, 260]);
+        const d3Root = d3.hierarchy(root);
+        treeLayout(d3Root);
+
+        // Links
+        gContainer.selectAll(".link")
+            .data(d3Root.links())
+            .enter()
+            .append("path")
+            .attr("class", d3Link => `link ${d3Link.target.data.isChosenPath ? 'stroke-green-500 glow' : 'stroke-gray-700'}`)
+            .attr("stroke-dasharray", d3Link => d3Link.target.data.isChosenPath ? null : "4,4")
+            .attr("stroke-width", d3Link => d3Link.target.data.isChosenPath ? 3 : 1.5)
+            .attr("d", d3.linkHorizontal()
+                .x(d => d.y)
+                .y(d => d.x)
+            );
+
+        // Nodes
+        const nodes = gContainer.selectAll(".node")
+            .data(d3Root.descendants())
+            .enter()
+            .append("g")
+            .attr("class", "node cursor-pointer")
+            .attr("transform", d => `translate(${d.y},${d.x})`)
+            .on("click", (event, d) => {
+                showInspector(d.data);
+            });
+
+        nodes.append("circle")
+            .attr("r", 8)
+            .attr("class", d => d.data.isChosenPath ? 'glow' : '')
+            .attr("stroke", d => d.data.isChosenPath ? "#22c55e" : "#eab308")
+            .attr("fill", d => d.data.isChosenPath ? "#22c55e" : "#1e293b");
+
+        nodes.append("text")
+            .attr("dy", ".31em")
+            .attr("x", d => d.children ? -12 : 12)
+            .attr("text-anchor", d => d.children ? "end" : "start")
+            .text(d => d.data.action || 'Start')
+            .attr("class", "font-semibold tracking-wide")
+            .attr("fill", d => d.data.isChosenPath ? "#fff" : "#cbd5e1");
+
+        // Center visualizer initially
+        const bounds = gContainer.node().getBBox();
+        const initialScale = 0.8;
+        const transform = d3.zoomIdentity
+            .translate(100, height / 2)
+            .scale(initialScale);
+        svg.call(d3.zoom().transform, transform);
+
+        // Inspector logic
+        const showInspector = (data) => {
+            document.getElementById('inspector-placeholder').classList.add('hidden');
+            document.getElementById('inspector-content').classList.remove('hidden');
+            document.getElementById('inspect-action').innerText = data.action || 'Start';
+            document.getElementById('inspect-g').innerText = data.g;
+            document.getElementById('inspect-h').innerText = data.h;
+            document.getElementById('inspect-f').innerText = data.f;
+            document.getElementById('inspect-state').innerText = JSON.stringify(data.state, null, 2);
+        };
+    </script>
+</body>
+</html>

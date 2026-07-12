@@ -1,0 +1,42 @@
+{
+  "name": "lattice",
+  "version": "0.1.0",
+  "description": "Deterministic Agent-Oriented Programming (DAOP) framework: mathematically safe, parallelized, microsecond-fast agentic workflows in TypeScript powered by a high-performance Rust A* planning core.",
+  "main": "dist/lattice_bridge.js",
+  "types": "dist/lattice_bridge.d.ts",
+  "type": "commonjs",
+  "scripts": {
+    "build:rust": "cargo build --release",
+    "build:ts": "tsc",
+    "build": "npm run build:rust && npm run build:ts",
+    "example:ledger": "npm run build:ts && node dist/lattice_workflow_example.js",
+    "example:htn": "npm run build:ts && node dist/lattice_htn_example.js"
+  },
+  "keywords": [
+    "agent",
+    "planning",
+    "goap",
+    "htn",
+    "a-star",
+    "deterministic",
+    "rust",
+    "typescript",
+    "dag",
+    "orchestration"
+  ],
+  "author": "Abick91",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Abick91/lattice.git"
+  },
+  "homepage": "https://github.com/Abick91/lattice#readme",
+  "bugs": {
+    "url": "https://github.com/Abick91/lattice/issues"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^7.0.2"
+  }
+}
