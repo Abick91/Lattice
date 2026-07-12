@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet, BinaryHeap};
 use std::cmp::Ordering;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
-use crate::tool::{Tool, Condition, Effect};
+use crate::tool::{Tool, Condition};
 use crate::skill_tree::SkillTree;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -300,6 +300,7 @@ impl LatticePlanner {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tool::Effect;
     use crate::tool::SimpleTool;
 
     #[test]

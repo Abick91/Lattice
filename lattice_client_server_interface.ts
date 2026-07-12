@@ -401,27 +401,23 @@ export class LatticeAgent<T extends Record<string, any>> {
     }
 
     private findRustBinary(): string {
-        const paths = [
-            path.join(__dirname, 'target', 'release', 'lattice.exe'),
-            path.join(__dirname, 'target', 'release', 'Lattice.exe'),
-            path.join(__dirname, 'target', 'debug', 'lattice.exe'),
-            path.join(__dirname, 'target', 'debug', 'Lattice.exe'),
-            path.join(__dirname, 'target', 'release', 'lattice'),
-            path.join(__dirname, 'target', 'release', 'Lattice'),
-            path.join(__dirname, 'target', 'debug', 'lattice'),
-            path.join(__dirname, 'target', 'debug', 'Lattice'),
-            path.join(process.cwd(), 'target', 'release', 'lattice.exe'),
-            path.join(process.cwd(), 'target', 'release', 'Lattice.exe'),
-            path.join(process.cwd(), 'target', 'debug', 'lattice.exe'),
-            path.join(process.cwd(), 'target', 'debug', 'Lattice.exe'),
-            path.join(process.cwd(), 'target', 'release', 'lattice'),
-            path.join(process.cwd(), 'target', 'release', 'Lattice'),
-            path.join(process.cwd(), 'target', 'debug', 'lattice'),
-            path.join(process.cwd(), 'target', 'debug', 'Lattice'),
-        ];
-        for (const p of paths) {
-            if (fs.existsSync(p)) {
-                return p;
+        // The Cargo bin target is `lattice-daemon`; `lattice` is kept as a
+        // legacy fallback for older builds. Windows appends `.exe`.
+        const roots = [__dirname, process.cwd()];
+        const profiles = ['release', 'debug'];
+        const names = ['lattice-daemon', 'lattice', 'Lattice'];
+        const exts = ['.exe', ''];
+
+        for (const root of roots) {
+            for (const profile of profiles) {
+                for (const name of names) {
+                    for (const ext of exts) {
+                        const p = path.join(root, 'target', profile, name + ext);
+                        if (fs.existsSync(p)) {
+                            return p;
+                        }
+                    }
+                }
             }
         }
         throw new Error("Rust planner binary not found. Please run 'cargo build --release' first.");
