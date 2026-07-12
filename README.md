@@ -31,14 +31,20 @@ Lattice uses **State-Space Search (A*)**, **Canonical Caching (Skill Tree)**, an
 
 ```mermaid
 graph TD
-    TS[TypeScript Client App] -->|1. Type-Safe eDSL Define State/Tools| Agent[LatticeAgent]
-    Agent -->|2. TCP Socket JSON| Daemon[Rust IPC Daemon]
-    Daemon -->|3. A* Search Planner| Core[Rust Core Engine]
-    Core -->|4. Checks Preconditions & Evaluates Mutators| Core
-    Core -->|5. Hashing state-goal| Cache[(Skill Tree Cache)]
-    Core -->|6. Graph Dependency Analysis| DAG[DAG Tiers Scheduler]
-    DAG -->|7. JSON Tiers + Telemetry| Agent
-    Agent -->|8. Parallel Promise.all execution| TS
+    TS["TypeScript Client App"]
+    Agent["LatticeAgent"]
+    Daemon["Rust IPC Daemon"]
+    Core["Rust Core Engine<br/><small>A* Search · Preconditions · Mutators</small>"]
+    Cache[("Skill Tree Cache")]
+    DAG["DAG Tiers Scheduler"]
+
+    TS -->|"1 · Type-safe eDSL: define state & tools"| Agent
+    Agent -->|"2 · TCP socket (JSON)"| Daemon
+    Daemon -->|"3 · A* search request"| Core
+    Core <-->|"4 · Hash state-goal / cache lookup"| Cache
+    Core -->|"5 · Graph dependency analysis"| DAG
+    DAG -->|"6 · JSON tiers + telemetry"| Agent
+    Agent -->|"7 · Parallel Promise.all execution"| TS
 ```
 
 ---
