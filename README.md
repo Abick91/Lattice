@@ -17,6 +17,7 @@ Unlike stochastic AI frameworks that rely on large language models (LLMs) which 
 Lattice uses **State-Space Search (A*)**, **Canonical Caching (Skill Tree)**, and **Out-of-Order Execution Scheduling (DAG)** to compose plans of action. Developers declare agent states and tools in TypeScript, and Lattice computes the optimal execution path in microseconds.
 
 > 📖 **New: [Vision, Use Cases & Roadmap](docs/VISION.md)** — where Lattice fits in the 2026 neurosymbolic AI stack, what you can build on top of it, and how far it scales.
+> 🧭 **[Strategy (Architect & CTO)](docs/STRATEGY.md)** — improve the engine, build with it, or build on top? The comparison, recommendation and phased plan.
 
 ### 🌟 Key Features
 
